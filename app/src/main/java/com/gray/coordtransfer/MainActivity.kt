@@ -89,6 +89,7 @@ private val ErrorColor = Color(0xFFFB7185)
 private const val PREFERENCES_NAME = "multik_preferences"
 private const val KEY_LAST_INPUT = "last_coordinate_input"
 private const val KEY_COORDINATE_HISTORY = "recognized_coordinate_history"
+private const val KEY_HISTORY_VERSION = "history_commit_mode_version"
 private const val HISTORY_LIMIT = 5
 
 private val AppColors = darkColorScheme(
@@ -118,6 +119,16 @@ private fun CoordinateConverterScreen() {
     val context = LocalContext.current
     val preferences = remember {
         context.getSharedPreferences(PREFERENCES_NAME, android.content.Context.MODE_PRIVATE)
+    }
+
+    // Clear entries from the previous per-keystroke history implementation once.
+    remember(preferences) {
+        if (preferences.getInt(KEY_HISTORY_VERSION, 0) < 1) {
+            preferences.edit()
+                .remove(KEY_COORDINATE_HISTORY)
+                .putInt(KEY_HISTORY_VERSION, 1)
+                .apply()
+        }
     }
 
     var input by rememberSaveable(stateSaver = TextFieldValue.Saver) {

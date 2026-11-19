@@ -10,6 +10,7 @@ Offline Android coordinate converter. Type or paste coordinates; the input forma
 - Degrees, minutes and seconds (DMS)
 - UTM / WGS 84, using a latitude band, for example: 35U 426000 5520000
 - MGRS, for example: 35U LV 26000 20000
+- Web Mercator (EPSG:3857), including the app's labeled X/Y output
 
 ## Output formats
 

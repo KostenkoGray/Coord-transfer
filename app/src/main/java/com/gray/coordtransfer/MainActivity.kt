@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -149,16 +150,10 @@ private fun CoordinateConverterScreen() {
                     letterSpacing = 1.4.sp
                 )
                 Text(
-                    text = "Мультик",
+                    text = "\"Мультик\"",
                     color = TextColor,
                     fontSize = 21.sp,
                     fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "(Мультикоординатный конвертер)",
-                    color = MutedColor.copy(alpha = 0.78f),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Normal
                 )
             }
 
@@ -183,16 +178,19 @@ private fun CoordinateConverterScreen() {
                         value = input,
                         onValueChange = { input = it },
                         modifier = Modifier.fillMaxWidth(),
-                        minLines = 3,
+                        minLines = 5,
                         maxLines = 5,
                         shape = RoundedCornerShape(10.dp),
                         placeholder = {
                             Text(
-                                "49.8397, 24.0297\n" +
-                                    "49° 50.382' N 24° 1.782' E\n" +
-                                    "35U 426000 5520000\n" +
-                                    "35U LV 26000 20000",
-                                color = MutedColor
+                                "DD    49.8397, 24.0297\n" +
+                                    "DDM  49° 50.382' N 24° 1.782' E\n" +
+                                    "DMS  49° 50' 22.9\" N 24° 1' 43.1\" E\n" +
+                                    "UTM  35U 426000 5520000\n" +
+                                    "MGRS 35U LV 26000 20000",
+                                color = Color(0xFF66718A),
+                                fontSize = 11.sp,
+                                lineHeight = 15.sp
                             )
                         },
                         colors = OutlinedTextFieldDefaults.colors(
@@ -217,23 +215,18 @@ private fun CoordinateConverterScreen() {
                         }
                     )
 
-                    Text(
-                        text = "Символи координат",
-                        color = MutedColor,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
-                    )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         listOf("°", "'", "\"").forEach { symbol ->
                             Button(
                                 onClick = { insertSymbol(symbol) },
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .height(38.dp),
-                                shape = RoundedCornerShape(10.dp),
+                                    .height(32.dp)
+                                    .width(36.dp),
+                                shape = RoundedCornerShape(8.dp),
                                 contentPadding = PaddingValues(0.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = InputColor,
@@ -243,22 +236,20 @@ private fun CoordinateConverterScreen() {
                             ) {
                                 Text(
                                     text = symbol,
-                                    fontSize = 18.sp,
+                                    fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
                         }
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        TextButton(onClick = { input = TextFieldValue("") }) {
-                            Text("Очистити", color = AccentColor)
+                        Spacer(modifier = Modifier.weight(1f))
+                        TextButton(
+                            onClick = { input = TextFieldValue("") },
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Text("Очистити", color = AccentColor, fontSize = 13.sp)
                         }
                     }
+
                 }
             }
 

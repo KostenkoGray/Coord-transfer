@@ -26,7 +26,8 @@ enum class CoordinateFormat(val displayName: String) {
     DEGREES_DECIMAL_MINUTES("Degrees and decimal minutes (DDM)"),
     DEGREES_MINUTES_SECONDS("Degrees, minutes and seconds (DMS)"),
     UTM("UTM / WGS 84"),
-    MGRS("MGRS")
+    MGRS("MGRS"),
+    WEB_MERCATOR("Web Mercator (EPSG:3857)")
 }
 
 data class ParsedCoordinate(
@@ -123,10 +124,11 @@ object CoordinateConverter {
         parseMgrs(value)?.let { return it }
         parseUtm(value)?.let { return it }
         parseDecimalWithHemisphere(value)?.let { return it }
+        parseWebMercator(value)?.let { return it }
         parsePlainDecimal(value)?.let { return it }
 
         throw IllegalArgumentException(
-            "Format not recognized. Try DD, DDM, DMS, UTM or MGRS."
+            "Format not recognized. Try DD, DDM, DMS, UTM, MGRS or Web Mercator."
         )
     }
 
@@ -271,6 +273,48 @@ object CoordinateConverter {
         val point = GeoPoint(latitude ?: return null, longitude ?: return null)
         validatePoint(point)
         return ParsedCoordinate(point, CoordinateFormat.DECIMAL_HEMISPHERE)
+    }
+
+
+    private val webMercatorLabeledPattern = Regex(
+        """^\s*X\s*[:=]?\s*(-?\d+(?:[.,]\d+)?)\s*m?\s*[,; ]+\s*Y\s*[:=]?\s*(-?\d+(?:[.,]\d+)?)\s*m?\s*$""",
+        RegexOption.IGNORE_CASE
+    )
+
+    private fun parseWebMercator(value: String): ParsedCoordinate? {
+        val labeled = webMercatorLabeledPattern.matchEntire(value)
+        val x: Double
+        val y: Double
+
+        if (labeled != null) {
+            x = parseNumber(labeled.groupValues[1]) ?: return null
+            y = parseNumber(labeled.groupValues[2]) ?: return null
+        } else {
+            val parts = when {
+                value.contains(';') -> value.split(';')
+                value.count { it == ',' } == 1 -> value.split(',')
+                else -> value.trim().split(Regex("""\s+"""))
+            }.map { it.trim() }
+
+            if (parts.size != 2 || parts.any { it.isEmpty() }) return null
+            x = parseNumber(parts[0]) ?: return null
+            y = parseNumber(parts[1]) ?: return null
+        }
+
+        // Prefer ordinary decimal degrees when both values are in geographic ranges.
+        if (x in -180.0..180.0 && y in -90.0..90.0) return null
+
+        val maxCoordinate = PI * A
+        if (x !in -maxCoordinate..maxCoordinate || y !in -maxCoordinate..maxCoordinate) {
+            return null
+        }
+
+        val point = GeoPoint(
+            latitude = Math.toDegrees(atan(sinh(y / A))),
+            longitude = Math.toDegrees(x / A)
+        )
+        validatePoint(point)
+        return ParsedCoordinate(point, CoordinateFormat.WEB_MERCATOR)
     }
 
     private fun parsePlainDecimal(value: String): ParsedCoordinate? {

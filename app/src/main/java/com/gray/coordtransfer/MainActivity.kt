@@ -52,10 +52,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardActions
+import androidx.compose.ui.text.input.KeyboardOptions
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -146,8 +150,8 @@ private fun CoordinateConverterScreen() {
         }
     }
 
-    var lastObservedInput by remember { mutableStateOf(input.text) }
     var historyExpanded by rememberSaveable { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
     val clipboard = LocalClipboardManager.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -158,29 +162,26 @@ private fun CoordinateConverterScreen() {
         else runCatching { CoordinateConverter.convert(inputText) }
     }
 
-    // Save the current field after every edit. Only successfully parsed new values enter history.
+    // The last draft is persisted continuously; history is committed only on Done / Add.
     LaunchedEffect(inputText) {
         preferences.edit().putString(KEY_LAST_INPUT, inputText).apply()
+    }
 
-        if (inputText != lastObservedInput) {
-            lastObservedInput = inputText
-            val isRecognized = inputText.isNotBlank() &&
-                runCatching { CoordinateConverter.parse(inputText) }.isSuccess
+    fun saveCurrentToHistory() {
+        val value = input.text.trim()
+        if (value.isBlank() || runCatching { CoordinateConverter.parse(value) }.isFailure) return
 
-            if (isRecognized) {
-                history.remove(inputText)
-                history.add(0, inputText)
-                while (history.size > HISTORY_LIMIT) {
-                    history.removeAt(history.lastIndex)
-                }
-
-                val jsonHistory = JSONArray()
-                history.forEach { jsonHistory.put(it) }
-                preferences.edit()
-                    .putString(KEY_COORDINATE_HISTORY, jsonHistory.toString())
-                    .apply()
-            }
+        history.remove(value)
+        history.add(0, value)
+        while (history.size > HISTORY_LIMIT) {
+            history.removeAt(history.lastIndex)
         }
+
+        val jsonHistory = JSONArray()
+        history.forEach { jsonHistory.put(it) }
+        preferences.edit()
+            .putString(KEY_COORDINATE_HISTORY, jsonHistory.toString())
+            .apply()
     }
 
     fun insertSymbol(symbol: String) {
@@ -211,7 +212,7 @@ private fun CoordinateConverterScreen() {
                 .padding(contentPadding)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(13.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Column(
                 modifier = Modifier
@@ -243,13 +244,13 @@ private fun CoordinateConverterScreen() {
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Column(
-                    modifier = Modifier.padding(13.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    modifier = Modifier.padding(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(7.dp)
                 ) {
                     Text(
                         text = "Вхідні координати",
                         color = TextColor,
-                        fontSize = 17.sp,
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.Bold
                     )
                     OutlinedTextField(
@@ -258,10 +259,17 @@ private fun CoordinateConverterScreen() {
                         modifier = Modifier.fillMaxWidth(),
                         minLines = 2,
                         maxLines = 2,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                saveCurrentToHistory()
+                                focusManager.clearFocus()
+                            }
+                        ),
                         shape = RoundedCornerShape(10.dp),
                         textStyle = TextStyle(
-                            fontSize = 18.sp,
-                            lineHeight = 24.sp,
+                            fontSize = 16.sp,
+                            lineHeight = 19.sp,
                             color = TextColor
                         ),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -272,8 +280,7 @@ private fun CoordinateConverterScreen() {
                             cursorColor = AccentColor,
                             focusedContainerColor = InputColor,
                             unfocusedContainerColor = InputColor
-                        ),
-
+                        )
                     )
 
                     Row(
@@ -285,8 +292,8 @@ private fun CoordinateConverterScreen() {
                             Button(
                                 onClick = { insertSymbol(symbol) },
                                 modifier = Modifier
-                                    .height(32.dp)
-                                    .width(36.dp),
+                                    .height(28.dp)
+                                    .width(32.dp),
                                 shape = RoundedCornerShape(8.dp),
                                 contentPadding = PaddingValues(0.dp),
                                 colors = ButtonDefaults.buttonColors(
@@ -297,17 +304,25 @@ private fun CoordinateConverterScreen() {
                             ) {
                                 Text(
                                     text = symbol,
-                                    fontSize = 15.sp,
+                                    fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
                         }
                         Spacer(modifier = Modifier.weight(1f))
+                        if (conversionResult?.isSuccess == true) {
+                            TextButton(
+                                onClick = { saveCurrentToHistory() },
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text("Додати", color = AccentColor, fontSize = 11.sp)
+                            }
+                        }
                         TextButton(
                             onClick = { input = TextFieldValue("") },
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
                         ) {
-                            Text("Очистити", color = AccentColor, fontSize = 13.sp)
+                            Text("Очистити", color = AccentColor, fontSize = 11.sp)
                         }
                     }
 
@@ -318,15 +333,15 @@ private fun CoordinateConverterScreen() {
                         shape = RoundedCornerShape(10.dp)
                     ) {
                         Column(
-                            modifier = Modifier.padding(horizontal = 11.dp, vertical = 9.dp),
-                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp),
+                            verticalArrangement = Arrangement.spacedBy(0.dp)
                         ) {
                             Text(
                                 text = "ШАБЛОНИ ФОРМАТІВ",
                                 color = Color(0xFF8290AA),
-                                fontSize = 10.sp,
+                                fontSize = 9.sp,
                                 fontWeight = FontWeight.Bold,
-                                letterSpacing = 0.7.sp
+                                letterSpacing = 0.5.sp
                             )
                             Text(
                                 text = "DD    49.8397, 24.0297\n" +
@@ -335,8 +350,8 @@ private fun CoordinateConverterScreen() {
                                     "UTM  35U 426000 5520000\n" +
                                     "MGRS 35U LV 26000 20000",
                                 color = Color(0xFF8290AA),
-                                fontSize = 13.sp,
-                                lineHeight = 18.sp
+                                fontSize = 11.sp,
+                                lineHeight = 15.sp
                             )
                         }
                     }
@@ -346,7 +361,7 @@ private fun CoordinateConverterScreen() {
             }
 
             if (history.isNotEmpty()) {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -356,21 +371,21 @@ private fun CoordinateConverterScreen() {
                         border = BorderStroke(1.dp, BorderColor)
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 13.dp, vertical = 11.dp),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
                                 text = "ІСТОРІЯ КООРДИНАТ (${history.size})",
                                 color = AccentColor,
-                                fontSize = 12.sp,
+                                fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
-                                letterSpacing = 0.6.sp
+                                letterSpacing = 0.5.sp
                             )
                             Spacer(modifier = Modifier.weight(1f))
                             Text(
                                 text = if (historyExpanded) "▲" else "▼",
                                 color = AccentColor,
-                                fontSize = 13.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -385,8 +400,8 @@ private fun CoordinateConverterScreen() {
                             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                         ) {
                             Column(
-                                modifier = Modifier.padding(horizontal = 13.dp, vertical = 10.dp),
-                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                verticalArrangement = Arrangement.spacedBy(2.dp)
                             ) {
                                 history.forEachIndexed { index, value ->
                                     val formatName = remember(value) {
@@ -398,27 +413,27 @@ private fun CoordinateConverterScreen() {
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .clickable { selectHistoryItem(value) }
-                                            .padding(vertical = 7.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                            .padding(vertical = 3.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(7.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
                                             text = (index + 1).toString(),
                                             color = AccentColor,
-                                            fontSize = 13.sp,
+                                            fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold
                                         )
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(
                                                 text = value,
                                                 color = TextColor,
-                                                fontSize = 14.sp,
-                                                maxLines = 2
+                                                fontSize = 12.sp,
+                                                maxLines = 1
                                             )
                                             Text(
                                                 text = formatName,
                                                 color = MutedColor,
-                                                fontSize = 11.sp
+                                                fontSize = 10.sp
                                             )
                                         }
                                     }
@@ -471,20 +486,20 @@ private fun CoordinateConverterScreen() {
                         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                     ) {
                         Column(
-                            modifier = Modifier.padding(14.dp),
-                            verticalArrangement = Arrangement.spacedBy(5.dp)
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
                             Text(
                                 text = "ВИЯВЛЕНО ФОРМАТ",
                                 color = AccentColor,
-                                fontSize = 11.sp,
+                                fontSize = 9.sp,
                                 fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.2.sp
+                                letterSpacing = 0.8.sp
                             )
                             Text(
                                 text = conversion.detectedFormat.displayName,
                                 color = TextColor,
-                                fontSize = 18.sp,
+                                fontSize = 15.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
                             Text(
@@ -498,7 +513,7 @@ private fun CoordinateConverterScreen() {
                                     conversion.point.longitude
                                 ),
                                 color = MutedColor,
-                                fontSize = 13.sp
+                                fontSize = 11.sp
                             )
                         }
                     }
@@ -511,13 +526,13 @@ private fun CoordinateConverterScreen() {
                         Text(
                             text = "Результати перерахунку",
                             color = TextColor,
-                            fontSize = 19.sp,
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
                             text = conversion.outputs.size.toString() + " форматів",
                             color = MutedColor,
-                            fontSize = 12.sp
+                            fontSize = 10.sp
                         )
                     }
 
@@ -574,28 +589,31 @@ private fun OutputCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 14.dp, top = 12.dp, bottom = 12.dp, end = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(start = 11.dp, top = 7.dp, bottom = 7.dp, end = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(5.dp)
+                verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
                     text = output.title,
                     color = MutedColor,
-                    fontSize = 12.sp,
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.Medium
                 )
                 Text(
                     text = output.value,
                     color = TextColor,
-                    fontSize = 15.sp,
+                    fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold
                 )
             }
-            IconButton(onClick = onCopy) {
+            IconButton(
+                onClick = onCopy,
+                modifier = Modifier.height(36.dp).width(36.dp)
+            ) {
                 Icon(
                     imageVector = Icons.Default.ContentCopy,
                     contentDescription = "Копіювати: " + output.title,

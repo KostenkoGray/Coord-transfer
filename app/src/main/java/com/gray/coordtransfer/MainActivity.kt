@@ -58,8 +58,8 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardActions
-import androidx.compose.ui.text.input.KeyboardOptions
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp

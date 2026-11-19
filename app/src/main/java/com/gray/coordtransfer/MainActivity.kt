@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -38,7 +39,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -48,12 +51,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.json.JSONArray
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -75,6 +81,11 @@ private val MutedColor = Color(0xFF9AA6BF)
 private val AccentColor = Color(0xFF7DD3FC)
 private val BorderColor = Color(0xFF2A3550)
 private val ErrorColor = Color(0xFFFB7185)
+
+private const val PREFERENCES_NAME = "multik_preferences"
+private const val KEY_LAST_INPUT = "last_coordinate_input"
+private const val KEY_COORDINATE_HISTORY = "recognized_coordinate_history"
+private const val HISTORY_LIMIT = 5
 
 private val AppColors = darkColorScheme(
     primary = AccentColor,
@@ -100,9 +111,42 @@ private fun CoordTransferTheme(content: @Composable () -> Unit) {
 
 @Composable
 private fun CoordinateConverterScreen() {
-    var input by rememberSaveable(stateSaver = TextFieldValue.Saver) {
-        mutableStateOf(TextFieldValue(""))
+    val context = LocalContext.current
+    val preferences = remember {
+        context.getSharedPreferences(PREFERENCES_NAME, android.content.Context.MODE_PRIVATE)
     }
+
+    var input by rememberSaveable(stateSaver = TextFieldValue.Saver) {
+        mutableStateOf(
+            TextFieldValue(
+                preferences.getString(KEY_LAST_INPUT, "") ?: ""
+            )
+        )
+    }
+
+    val history = remember {
+        mutableStateListOf<String>().apply {
+            val storedHistory = runCatching {
+                JSONArray(preferences.getString(KEY_COORDINATE_HISTORY, "[]") ?: "[]")
+            }.getOrNull()
+
+            if (storedHistory != null) {
+                for (index in 0 until storedHistory.length()) {
+                    val value = storedHistory.optString(index)
+                    if (
+                        value.isNotBlank() &&
+                        value !in this &&
+                        runCatching { CoordinateConverter.parse(value) }.isSuccess
+                    ) {
+                        add(value)
+                    }
+                    if (size >= HISTORY_LIMIT) break
+                }
+            }
+        }
+    }
+
+    var lastObservedInput by remember { mutableStateOf(input.text) }
     val clipboard = LocalClipboardManager.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -113,6 +157,31 @@ private fun CoordinateConverterScreen() {
         else runCatching { CoordinateConverter.convert(inputText) }
     }
 
+    // Save the current field after every edit. Only successfully parsed new values enter history.
+    LaunchedEffect(inputText) {
+        preferences.edit().putString(KEY_LAST_INPUT, inputText).apply()
+
+        if (inputText != lastObservedInput) {
+            lastObservedInput = inputText
+            val isRecognized = inputText.isNotBlank() &&
+                runCatching { CoordinateConverter.parse(inputText) }.isSuccess
+
+            if (isRecognized) {
+                history.remove(inputText)
+                history.add(0, inputText)
+                while (history.size > HISTORY_LIMIT) {
+                    history.removeAt(history.lastIndex)
+                }
+
+                val jsonHistory = JSONArray()
+                history.forEach { jsonHistory.put(it) }
+                preferences.edit()
+                    .putString(KEY_COORDINATE_HISTORY, jsonHistory.toString())
+                    .apply()
+            }
+        }
+    }
+
     fun insertSymbol(symbol: String) {
         val start = input.selection.start.coerceIn(0, input.text.length)
         val end = input.selection.end.coerceIn(start, input.text.length)
@@ -120,6 +189,13 @@ private fun CoordinateConverterScreen() {
         input = TextFieldValue(
             text = updatedText,
             selection = TextRange(start + symbol.length)
+        )
+    }
+
+    fun selectHistoryItem(value: String) {
+        input = TextFieldValue(
+            text = value,
+            selection = TextRange(value.length)
         )
     }
 
@@ -138,7 +214,7 @@ private fun CoordinateConverterScreen() {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 2.dp),
+                    .padding(top = 12.dp, bottom = 2.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
@@ -152,7 +228,7 @@ private fun CoordinateConverterScreen() {
                 Text(
                     text = "\"Мультик\"",
                     color = TextColor,
-                    fontSize = 21.sp,
+                    fontSize = 24.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -178,21 +254,14 @@ private fun CoordinateConverterScreen() {
                         value = input,
                         onValueChange = { input = it },
                         modifier = Modifier.fillMaxWidth(),
-                        minLines = 5,
+                        minLines = 3,
                         maxLines = 5,
                         shape = RoundedCornerShape(10.dp),
-                        placeholder = {
-                            Text(
-                                "DD    49.8397, 24.0297\n" +
-                                    "DDM  49° 50.382' N 24° 1.782' E\n" +
-                                    "DMS  49° 50' 22.9\" N 24° 1' 43.1\" E\n" +
-                                    "UTM  35U 426000 5520000\n" +
-                                    "MGRS 35U LV 26000 20000",
-                                color = Color(0xFF66718A),
-                                fontSize = 11.sp,
-                                lineHeight = 15.sp
-                            )
-                        },
+                        textStyle = TextStyle(
+                            fontSize = 18.sp,
+                            lineHeight = 24.sp,
+                            color = TextColor
+                        ),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = TextColor,
                             unfocusedTextColor = TextColor,
@@ -214,6 +283,36 @@ private fun CoordinateConverterScreen() {
                             }
                         }
                     )
+
+                    // Persistent format examples: these remain visible while the field contains text.
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = InputColor,
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(horizontal = 11.dp, vertical = 9.dp),
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Text(
+                                text = "ШАБЛОНИ ФОРМАТІВ",
+                                color = Color(0xFF8290AA),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.7.sp
+                            )
+                            Text(
+                                text = "DD    49.8397, 24.0297\n" +
+                                    "DDM  49° 50.382' N 24° 1.782' E\n" +
+                                    "DMS  49° 50' 22.9\" N 24° 1' 43.1\" E\n" +
+                                    "UTM  35U 426000 5520000\n" +
+                                    "MGRS 35U LV 26000 20000",
+                                color = Color(0xFF8290AA),
+                                fontSize = 13.sp,
+                                lineHeight = 18.sp
+                            )
+                        }
+                    }
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -249,7 +348,67 @@ private fun CoordinateConverterScreen() {
                             Text("Очистити", color = AccentColor, fontSize = 13.sp)
                         }
                     }
+                }
+            }
 
+            if (history.isNotEmpty()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = CardColor),
+                    border = BorderStroke(1.dp, BorderColor),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 13.dp, vertical = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = "ОСТАННІ 5 КООРДИНАТ",
+                            color = AccentColor,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.8.sp
+                        )
+                        history.forEachIndexed { index, value ->
+                            val formatName = remember(value) {
+                                runCatching {
+                                    CoordinateConverter.parse(value).format.displayName
+                                }.getOrDefault("Координати")
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { selectHistoryItem(value) }
+                                    .padding(vertical = 7.dp),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = (index + 1).toString(),
+                                    color = AccentColor,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = value,
+                                        color = TextColor,
+                                        fontSize = 14.sp,
+                                        maxLines = 2
+                                    )
+                                    Text(
+                                        text = formatName,
+                                        color = MutedColor,
+                                        fontSize = 11.sp
+                                    )
+                                }
+                            }
+                            if (index != history.lastIndex) {
+                                HorizontalDivider(color = BorderColor)
+                            }
+                        }
+                    }
                 }
             }
 
@@ -257,8 +416,8 @@ private fun CoordinateConverterScreen() {
                 inputText.isBlank() -> {
                     InfoCard(
                         title = "Як користуватися",
-                        body = "Встав або введи координати в підтримуваному форматі. " +
-                            "Додаток визначить формат і автоматично перерахує координати."
+                        body = "Введи або встав координати. Формат визначиться автоматично, " +
+                            "а останній введений рядок збережеться після виходу з додатка."
                     )
                     Text(
                         text = "Формати: DD · DDM · DMS · UTM · MGRS",

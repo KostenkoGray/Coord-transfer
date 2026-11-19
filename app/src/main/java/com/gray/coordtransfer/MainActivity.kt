@@ -147,6 +147,7 @@ private fun CoordinateConverterScreen() {
     }
 
     var lastObservedInput by remember { mutableStateOf(input.text) }
+    var historyExpanded by rememberSaveable { mutableStateOf(false) }
     val clipboard = LocalClipboardManager.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -197,6 +198,7 @@ private fun CoordinateConverterScreen() {
             text = value,
             selection = TextRange(value.length)
         )
+        historyExpanded = false
     }
 
     Scaffold(
@@ -254,8 +256,8 @@ private fun CoordinateConverterScreen() {
                         value = input,
                         onValueChange = { input = it },
                         modifier = Modifier.fillMaxWidth(),
-                        minLines = 3,
-                        maxLines = 5,
+                        minLines = 2,
+                        maxLines = 2,
                         shape = RoundedCornerShape(10.dp),
                         textStyle = TextStyle(
                             fontSize = 18.sp,
@@ -271,48 +273,8 @@ private fun CoordinateConverterScreen() {
                             focusedContainerColor = InputColor,
                             unfocusedContainerColor = InputColor
                         ),
-                        trailingIcon = {
-                            if (input.text.isNotEmpty()) {
-                                IconButton(onClick = { input = TextFieldValue("") }) {
-                                    Icon(
-                                        imageVector = Icons.Default.Close,
-                                        contentDescription = "Очистити поле",
-                                        tint = MutedColor
-                                    )
-                                }
-                            }
-                        }
-                    )
 
-                    // Persistent format examples: these remain visible while the field contains text.
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        color = InputColor,
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(horizontal = 11.dp, vertical = 9.dp),
-                            verticalArrangement = Arrangement.spacedBy(2.dp)
-                        ) {
-                            Text(
-                                text = "ШАБЛОНИ ФОРМАТІВ",
-                                color = Color(0xFF8290AA),
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 0.7.sp
-                            )
-                            Text(
-                                text = "DD    49.8397, 24.0297\n" +
-                                    "DDM  49° 50.382' N 24° 1.782' E\n" +
-                                    "DMS  49° 50' 22.9\" N 24° 1' 43.1\" E\n" +
-                                    "UTM  35U 426000 5520000\n" +
-                                    "MGRS 35U LV 26000 20000",
-                                color = Color(0xFF8290AA),
-                                fontSize = 13.sp,
-                                lineHeight = 18.sp
-                            )
-                        }
-                    }
+                    )
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -348,64 +310,122 @@ private fun CoordinateConverterScreen() {
                             Text("Очистити", color = AccentColor, fontSize = 13.sp)
                         }
                     }
+
+                    // Persistent format examples: these remain visible while the field contains text.
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = InputColor,
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(horizontal = 11.dp, vertical = 9.dp),
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Text(
+                                text = "ШАБЛОНИ ФОРМАТІВ",
+                                color = Color(0xFF8290AA),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.7.sp
+                            )
+                            Text(
+                                text = "DD    49.8397, 24.0297\n" +
+                                    "DDM  49° 50.382' N 24° 1.782' E\n" +
+                                    "DMS  49° 50' 22.9\" N 24° 1' 43.1\" E\n" +
+                                    "UTM  35U 426000 5520000\n" +
+                                    "MGRS 35U LV 26000 20000",
+                                color = Color(0xFF8290AA),
+                                fontSize = 13.sp,
+                                lineHeight = 18.sp
+                            )
+                        }
+                    }
+
+
                 }
             }
 
             if (history.isNotEmpty()) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = CardColor),
-                    border = BorderStroke(1.dp, BorderColor),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 13.dp, vertical = 10.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { historyExpanded = !historyExpanded },
+                        color = CardColor,
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, BorderColor)
                     ) {
-                        Text(
-                            text = "ОСТАННІ 5 КООРДИНАТ",
-                            color = AccentColor,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.8.sp
-                        )
-                        history.forEachIndexed { index, value ->
-                            val formatName = remember(value) {
-                                runCatching {
-                                    CoordinateConverter.parse(value).format.displayName
-                                }.getOrDefault("Координати")
-                            }
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { selectHistoryItem(value) }
-                                    .padding(vertical = 7.dp),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                        Row(
+                            modifier = Modifier.padding(horizontal = 13.dp, vertical = 11.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "ІСТОРІЯ КООРДИНАТ (${history.size})",
+                                color = AccentColor,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.6.sp
+                            )
+                            Spacer(modifier = Modifier.weight(1f))
+                            Text(
+                                text = if (historyExpanded) "▲" else "▼",
+                                color = AccentColor,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    if (historyExpanded) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = CardDefaults.cardColors(containerColor = CardColor),
+                            border = BorderStroke(1.dp, BorderColor),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(horizontal = 13.dp, vertical = 10.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                Text(
-                                    text = (index + 1).toString(),
-                                    color = AccentColor,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = value,
-                                        color = TextColor,
-                                        fontSize = 14.sp,
-                                        maxLines = 2
-                                    )
-                                    Text(
-                                        text = formatName,
-                                        color = MutedColor,
-                                        fontSize = 11.sp
-                                    )
+                                history.forEachIndexed { index, value ->
+                                    val formatName = remember(value) {
+                                        runCatching {
+                                            CoordinateConverter.parse(value).format.displayName
+                                        }.getOrDefault("Координати")
+                                    }
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable { selectHistoryItem(value) }
+                                            .padding(vertical = 7.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = (index + 1).toString(),
+                                            color = AccentColor,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = value,
+                                                color = TextColor,
+                                                fontSize = 14.sp,
+                                                maxLines = 2
+                                            )
+                                            Text(
+                                                text = formatName,
+                                                color = MutedColor,
+                                                fontSize = 11.sp
+                                            )
+                                        }
+                                    }
+                                    if (index != history.lastIndex) {
+                                        HorizontalDivider(color = BorderColor)
+                                    }
                                 }
-                            }
-                            if (index != history.lastIndex) {
-                                HorizontalDivider(color = BorderColor)
                             }
                         }
                     }

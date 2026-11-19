@@ -16,10 +16,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -112,13 +111,13 @@ private fun CoordinateConverterScreen() {
                     letterSpacing = 1.6.sp
                 )
                 Text(
-                    text = "Coordinate converter",
+                    text = "Конвертер координат",
                     color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 27.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Offline · WGS 84",
+                    text = "Офлайн · WGS 84",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 14.sp
                 )
@@ -136,7 +135,7 @@ private fun CoordinateConverterScreen() {
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        text = "Input coordinates",
+                        text = "Вхідні координати",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -159,7 +158,7 @@ private fun CoordinateConverterScreen() {
                                 IconButton(onClick = { input = "" }) {
                                     Icon(
                                         imageVector = Icons.Default.Close,
-                                        contentDescription = "Clear input"
+                                        contentDescription = "Очистити поле"
                                     )
                                 }
                             }
@@ -171,21 +170,7 @@ private fun CoordinateConverterScreen() {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         TextButton(onClick = { input = "" }) {
-                            Text("Clear")
-                        }
-                        Button(
-                            onClick = {
-                                if (input.isNotBlank()) {
-                                    conversionResult?.exceptionOrNull()?.message?.let { message ->
-                                        scope.launch {
-                                            snackbarHostState.showSnackbar(message)
-                                        }
-                                    }
-                                }
-                            },
-                            enabled = input.isNotBlank() && conversionResult?.isFailure == true
-                        ) {
-                            Text("Check input")
+                            Text("Очистити")
                         }
                     }
                 }
@@ -194,12 +179,12 @@ private fun CoordinateConverterScreen() {
             when {
                 input.isBlank() -> {
                     InfoCard(
-                        title = "How to use",
-                        body = "Paste or type coordinates in any supported format. " +
-                            "The app identifies the input format and calculates the equivalents automatically."
+                        title = "Як користуватися",
+                        body = "Встав координати в будь-якому підтримуваному форматі. " +
+                            "Додаток визначить систему та автоматично перерахує координати."
                     )
                     Text(
-                        text = "Formats: DD · DDM · DMS · UTM · MGRS",
+                        text = "Формати: DD · DDM · DMS · UTM · MGRS",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 12.sp
                     )
@@ -207,13 +192,13 @@ private fun CoordinateConverterScreen() {
 
                 conversionResult?.isFailure == true -> {
                     InfoCard(
-                        title = "Could not recognize coordinates",
+                        title = "Не вдалося розпізнати координати",
                         body = conversionResult.exceptionOrNull()?.message
-                            ?: "Check the input format and try again.",
+                            ?: "Перевір формат координат і спробуй ще раз.",
                         isError = true
                     )
                     Text(
-                        text = "Examples: 49.8397, 24.0297 · 35U 426000 5520000 · 35U LV 26000 20000",
+                        text = "Приклади: 49.8397, 24.0297 · 35U 426000 5520000 · 35U LV 26000 20000",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 12.sp
                     )
@@ -233,7 +218,7 @@ private fun CoordinateConverterScreen() {
                             verticalArrangement = Arrangement.spacedBy(5.dp)
                         ) {
                             Text(
-                                text = "INPUT DETECTED",
+                                text = "ВИЯВЛЕНО ФОРМАТ",
                                 color = Color.White.copy(alpha = 0.78f),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
@@ -267,12 +252,12 @@ private fun CoordinateConverterScreen() {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Converted coordinates",
+                            text = "Результати перерахунку",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = conversion.outputs.size.toString() + " formats",
+                            text = conversion.outputs.size.toString() + " форматів",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 12.sp
                         )
@@ -285,7 +270,7 @@ private fun CoordinateConverterScreen() {
                                 clipboard.setText(AnnotatedString(output.value))
                                 scope.launch {
                                     snackbarHostState.showSnackbar(
-                                        output.title + " copied"
+                                        output.title + " — скопійовано"
                                     )
                                 }
                             }
@@ -293,8 +278,8 @@ private fun CoordinateConverterScreen() {
                     }
 
                     Text(
-                        text = "Projection calculations: WGS 84. UTM/MGRS are shown " +
-                            "for latitudes from 80°S to 84°N.",
+                        text = "Розрахунок за WGS 84. UTM/MGRS доступні " +
+                            "у широтах від 80° пд. ш. до 84° пн. ш.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 12.sp
                     )
@@ -302,9 +287,9 @@ private fun CoordinateConverterScreen() {
             }
 
             Spacer(modifier = Modifier.height(4.dp))
-            Divider(color = MaterialTheme.colorScheme.outlineVariant)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             Text(
-                text = "Works without internet or location access.",
+                text = "Працює без інтернету та доступу до геолокації.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 12.sp,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -352,7 +337,7 @@ private fun OutputCard(
             IconButton(onClick = onCopy) {
                 Icon(
                     imageVector = Icons.Default.ContentCopy,
-                    contentDescription = "Copy " + output.title,
+                    contentDescription = "Копіювати: " + output.title,
                     tint = MaterialTheme.colorScheme.primary
                 )
             }

@@ -135,23 +135,37 @@ object CoordinateConverter {
     fun convert(input: String): Conversion {
         val parsed = parse(input)
         val point = parsed.point
-        val outputs = mutableListOf(
-            CoordinateOutput("Decimal degrees (DD)", formatDecimalDegrees(point)),
-            CoordinateOutput("Degrees and decimal minutes (DDM)", formatDdm(point)),
-            CoordinateOutput("Degrees, minutes and seconds (DMS)", formatDms(point))
-        )
+        val outputs = mutableListOf<CoordinateOutput>()
 
-        runCatching { toUtm(point) }.getOrNull()?.let { utm ->
-            outputs += CoordinateOutput("UTM / WGS 84", formatUtm(utm))
-            outputs += CoordinateOutput("MGRS", toMgrs(utm, precision = 5))
+        if (parsed.format != CoordinateFormat.DECIMAL_DEGREES &&
+            parsed.format != CoordinateFormat.DECIMAL_HEMISPHERE
+        ) {
+            outputs += CoordinateOutput("Decimal degrees (DD)", formatDecimalDegrees(point))
+        }
+        if (parsed.format != CoordinateFormat.DEGREES_DECIMAL_MINUTES) {
+            outputs += CoordinateOutput("Degrees and decimal minutes (DDM)", formatDdm(point))
+        }
+        if (parsed.format != CoordinateFormat.DEGREES_MINUTES_SECONDS) {
+            outputs += CoordinateOutput("Degrees, minutes and seconds (DMS)", formatDms(point))
         }
 
-        runCatching { toWebMercator(point) }.getOrNull()?.let { mercator ->
-            outputs += CoordinateOutput(
-                "Web Mercator (EPSG:3857)",
-                "X " + formatMeters(mercator.first) + " m, Y " +
-                    formatMeters(mercator.second) + " m"
-            )
+        runCatching { toUtm(point) }.getOrNull()?.let { utm ->
+            if (parsed.format != CoordinateFormat.UTM) {
+                outputs += CoordinateOutput("UTM / WGS 84", formatUtm(utm))
+            }
+            if (parsed.format != CoordinateFormat.MGRS) {
+                outputs += CoordinateOutput("MGRS", toMgrs(utm, precision = 5))
+            }
+        }
+
+        if (parsed.format != CoordinateFormat.WEB_MERCATOR) {
+            runCatching { toWebMercator(point) }.getOrNull()?.let { mercator ->
+                outputs += CoordinateOutput(
+                    "Web Mercator (EPSG:3857)",
+                    "X " + formatMeters(mercator.first) + " m, Y " +
+                        formatMeters(mercator.second) + " m"
+                )
+            }
         }
 
         return Conversion(point, parsed.format, outputs)

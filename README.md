@@ -1,6 +1,14 @@
-# Coord Transfer
+# Мультик — Coordinate Transfer
 
-Offline Android coordinate converter. Type or paste coordinates; the input format is detected automatically and equivalent coordinates are displayed with an individual copy action.
+Offline Android coordinate converter. Enter or paste coordinates; the input format is detected automatically and equivalent coordinates are displayed with an individual copy action.
+
+## Interface
+
+- Dark navy interface inspired by the companion app «Кальцій».
+- App title: **COORD TRANSFER / Мультик**.
+- Quick insertion buttons for the coordinate symbols `°`, `'` and `"`.
+- Results omit the coordinate format already used in the input.
+- Compass-and-waves launcher icon in the same navy/cyan palette.
 
 ## Supported input formats
 
@@ -21,6 +29,8 @@ Offline Android coordinate converter. Type or paste coordinates; the input forma
 - MGRS (1 m precision)
 - Web Mercator (EPSG:3857)
 
+The output list excludes the matching input format to avoid showing duplicate information.
+
 UTM/MGRS output is available from 80°S to 84°N. Web Mercator output is limited to approximately 85.0511° north/south. This initial version uses WGS 84 as its geodetic reference.
 
 ## Offline and privacy
@@ -36,7 +46,3 @@ Run unit tests and build the debug APK:
     gradle testDebugUnitTest assembleDebug
 
 GitHub Actions runs the same checks on pushes and pull requests to main, then publishes the debug APK as a workflow artifact.
-
-## Status
-
-MVP in progress. Coordinate parsing, WGS 84 projections, the Compose interface, copy actions, unit tests, and CI are included in the first implementation.

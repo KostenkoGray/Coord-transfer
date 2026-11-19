@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+    <path android:fillColor="#00000000" android:strokeColor="#9FC8DE" android:strokeWidth="9" android:pathData="M256,74 A182,182 0,1 1,255.9,74" />
+    <path android:fillColor="#00000000" android:strokeColor="#476A86" android:strokeWidth="5" android:pathData="M256,112 A144,144 0,1 1,255.9,112" />
+    <path android:fillColor="#C6E8F7" android:pathData="M247,53h18v37h-18z M247,422h18v37h-18z M53,247h37v18H53z M422,247h37v18h-37z" />
+    <path android:fillColor="#769BB5" android:pathData="M128,120l14,-14 24,24 -14,14z M370,362l14,-14 24,24 -14,14z M370,128l24,-24 14,14 -24,24z M128,384l-14,-14 24,-24 14,14z" />
+    <path android:fillColor="#EAF4FA" android:pathData="M256,107 L286,246 L256,226 L226,246 Z M405,256 L266,286 L286,256 L266,226 Z M256,405 L226,266 L256,286 L286,266 Z M107,256 L246,226 L226,256 L246,286 Z" />
+    <path android:fillColor="#3D82A9" android:pathData="M256,107 L256,226 L226,246 Z M405,256 L286,256 L266,226 Z M256,405 L256,286 L286,266 Z M107,256 L226,256 L246,286 Z" />
+    <path android:fillColor="#34C7F4" android:pathData="M179,188 C185,143 225,119 267,126 C285,129 300,138 312,151 L330,133 L339,187 L285,181 L301,165 C292,156 280,151 266,149 C235,144 208,160 201,190 Z" />
+    <path android:fillColor="#34C7F4" android:pathData="M333,324 C327,369 287,393 245,386 C227,383 212,374 200,361 L182,379 L173,325 L227,331 L211,347 C220,356 232,361 246,363 C277,368 304,352 311,322 Z" />
+    <path android:fillColor="#00000000" android:strokeColor="#2499C8" android:strokeWidth="13" android:strokeLineCap="round" android:pathData="M94,400 C140,372 177,372 220,393 C258,412 294,412 334,390 C374,368 410,372 452,395" />
+    <path android:fillColor="#00000000" android:strokeColor="#17618B" android:strokeWidth="10" android:strokeLineCap="round" android:pathData="M120,435 C159,413 194,413 229,431 C265,450 300,450 337,429 C371,409 400,413 432,432" />
+</vector>

@@ -69,4 +69,23 @@ class CoordinateConverterTest {
         assertEquals(original.longitude, restored.point.longitude, 0.00001)
     }
 
+
+    @Test
+    fun conversionOmitsTheSameFormatUsedForInput() {
+        val dd = CoordinateConverter.convert("49.8397, 24.0297")
+        assertTrue(dd.outputs.none { it.title == "Decimal degrees (DD)" })
+
+        val ddm = CoordinateConverter.convert("49° 50.382' N 24° 1.782' E")
+        assertTrue(ddm.outputs.none { it.title == "Degrees and decimal minutes (DDM)" })
+
+        val dms = CoordinateConverter.convert("49° 50' 22.92\\" N 24° 1' 46.92\\" E")
+        assertTrue(dms.outputs.none { it.title == "Degrees, minutes and seconds (DMS)" })
+
+        val utm = CoordinateConverter.convert("35U 426000 5520000")
+        assertTrue(utm.outputs.none { it.title == "UTM / WGS 84" })
+
+        val mgrs = CoordinateConverter.convert("35U LV 26000 20000")
+        assertTrue(mgrs.outputs.none { it.title == "MGRS" })
+    }
+
 }

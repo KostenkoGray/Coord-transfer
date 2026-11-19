@@ -25,7 +25,7 @@ class CoordinateConverterTest {
     @Test
     fun parsesDdmAndDms() {
         val ddm = CoordinateConverter.parse("49° 50.382' N 24° 1.782' E")
-        val dms = CoordinateConverter.parse("49° 50' 22.92\" N 24° 1' 42.84\" E")
+        val dms = CoordinateConverter.parse("49° 50' 22.92\" N 24° 1' 46.92\" E")
         assertEquals(CoordinateFormat.DEGREES_DECIMAL_MINUTES, ddm.format)
         assertEquals(CoordinateFormat.DEGREES_MINUTES_SECONDS, dms.format)
         assertEquals(ddm.point.latitude, dms.point.latitude, 0.000001)

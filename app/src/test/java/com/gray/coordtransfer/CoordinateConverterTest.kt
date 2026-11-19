@@ -78,7 +78,7 @@ class CoordinateConverterTest {
         val ddm = CoordinateConverter.convert("49° 50.382' N 24° 1.782' E")
         assertTrue(ddm.outputs.none { it.title == "Degrees and decimal minutes (DDM)" })
 
-        val dms = CoordinateConverter.convert("49° 50' 22.92\\" N 24° 1' 46.92\\" E")
+        val dms = CoordinateConverter.convert("""49° 50' 22.92" N 24° 1' 46.92" E""")
         assertTrue(dms.outputs.none { it.title == "Degrees, minutes and seconds (DMS)" })
 
         val utm = CoordinateConverter.convert("35U 426000 5520000")
@@ -86,6 +86,11 @@ class CoordinateConverterTest {
 
         val mgrs = CoordinateConverter.convert("35U LV 26000 20000")
         assertTrue(mgrs.outputs.none { it.title == "MGRS" })
+
+        val mercatorValue = CoordinateConverter.convert("49.8397, 24.0297")
+            .outputs.first { it.title == "Web Mercator (EPSG:3857)" }.value
+        val mercatorInput = CoordinateConverter.convert(mercatorValue)
+        assertTrue(mercatorInput.outputs.none { it.title == "Web Mercator (EPSG:3857)" })
     }
 
 }

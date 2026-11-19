@@ -188,6 +188,16 @@ private fun CoordinateConverterScreen() {
             history.removeAt(history.lastIndex)
         }
 
+        persistHistory()
+    }
+
+    fun removeHistoryItem(value: String) {
+        history.remove(value)
+        persistHistory()
+        if (history.isEmpty()) historyExpanded = false
+    }
+
+    fun persistHistory() {
         val jsonHistory = JSONArray()
         history.forEach { jsonHistory.put(it) }
         preferences.edit()
@@ -423,9 +433,8 @@ private fun CoordinateConverterScreen() {
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .clickable { selectHistoryItem(value) }
                                             .padding(vertical = 3.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(7.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
@@ -434,7 +443,11 @@ private fun CoordinateConverterScreen() {
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold
                                         )
-                                        Column(modifier = Modifier.weight(1f)) {
+                                        Column(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .clickable { selectHistoryItem(value) }
+                                        ) {
                                             Text(
                                                 text = value,
                                                 color = TextColor,
@@ -445,6 +458,18 @@ private fun CoordinateConverterScreen() {
                                                 text = formatName,
                                                 color = MutedColor,
                                                 fontSize = 10.sp
+                                            )
+                                        }
+                                        IconButton(
+                                            onClick = { removeHistoryItem(value) },
+                                            modifier = Modifier
+                                                .height(28.dp)
+                                                .width(28.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Close,
+                                                contentDescription = "Видалити з історії",
+                                                tint = MutedColor
                                             )
                                         }
                                     }
@@ -564,7 +589,9 @@ private fun CoordinateConverterScreen() {
                     Text(
                         text = "UTM/MGRS доступні у широтах від 80° пд. ш. до 84° пн. ш.",
                         color = MutedColor,
-                        fontSize = 12.sp
+                        fontSize = 9.sp,
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
             }

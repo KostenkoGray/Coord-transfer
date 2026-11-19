@@ -178,6 +178,14 @@ private fun CoordinateConverterScreen() {
         preferences.edit().putString(KEY_LAST_INPUT, inputText).apply()
     }
 
+    fun persistHistory() {
+        val jsonHistory = JSONArray()
+        history.forEach { jsonHistory.put(it) }
+        preferences.edit()
+            .putString(KEY_COORDINATE_HISTORY, jsonHistory.toString())
+            .apply()
+    }
+
     fun saveCurrentToHistory() {
         val value = input.text.trim()
         if (value.isBlank() || runCatching { CoordinateConverter.parse(value) }.isFailure) return
@@ -195,14 +203,6 @@ private fun CoordinateConverterScreen() {
         history.remove(value)
         persistHistory()
         if (history.isEmpty()) historyExpanded = false
-    }
-
-    fun persistHistory() {
-        val jsonHistory = JSONArray()
-        history.forEach { jsonHistory.put(it) }
-        preferences.edit()
-            .putString(KEY_COORDINATE_HISTORY, jsonHistory.toString())
-            .apply()
     }
 
     fun insertSymbol(symbol: String) {

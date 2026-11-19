@@ -144,14 +144,14 @@ private fun CoordinateConverterScreen() {
                 Text(
                     text = "COORD TRANSFER",
                     color = AccentColor,
-                    fontSize = 23.sp,
+                    fontSize = 27.sp,
                     fontWeight = FontWeight.ExtraBold,
                     letterSpacing = 1.4.sp
                 )
                 Text(
                     text = "Мультик",
                     color = TextColor,
-                    fontSize = 27.sp,
+                    fontSize = 21.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Text(

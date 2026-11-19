@@ -318,7 +318,7 @@ object CoordinateConverter {
         val latitude = Math.toRadians(point.latitude)
         val longitude = Math.toRadians(point.longitude)
         val zone = zoneFor(point.latitude, point.longitude)
-        val longitudeOrigin = Math.toRadians((zone - 1) * 6 - 180 + 3)
+        val longitudeOrigin = Math.toRadians((zone - 1) * 6.0 - 180.0 + 3.0)
         val eccentricityPrimeSquared = ECC_SQUARED / (1.0 - ECC_SQUARED)
 
         val sinLatitude = sin(latitude)
@@ -409,7 +409,7 @@ object CoordinateConverter {
                 d.pow(6) / 720.0
             )
 
-        val longitudeOrigin = Math.toRadians((zone - 1) * 6 - 180 + 3)
+        val longitudeOrigin = Math.toRadians((zone - 1) * 6.0 - 180.0 + 3.0)
         val longitude = longitudeOrigin + (
             d - (1.0 + 2.0 * t1 + c1) * d.pow(3) / 6.0 +
                 (5.0 - 2.0 * c1 + 28.0 * t1 - 3.0 * c1.pow(2) +

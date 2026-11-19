@@ -57,4 +57,16 @@ class CoordinateConverterTest {
         val result = runCatching { CoordinateConverter.parse("91.0, 24.0") }
         assertTrue(result.isFailure)
     }
+    @Test
+    fun webMercatorOutputCanBeUsedAsInput() {
+        val original = GeoPoint(49.8397, 24.0297)
+        val converted = CoordinateConverter.convert("49.8397, 24.0297")
+        val mercator = converted.outputs.first { it.title == "Web Mercator (EPSG:3857)" }.value
+        val restored = CoordinateConverter.parse(mercator)
+
+        assertEquals(CoordinateFormat.WEB_MERCATOR, restored.format)
+        assertEquals(original.latitude, restored.point.latitude, 0.00001)
+        assertEquals(original.longitude, restored.point.longitude, 0.00001)
+    }
+
 }
